@@ -1,0 +1,416 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+Звіт
+з лабораторної роботи № 3 з дисципліни
+Програмування під Android
+   
+
+
+
+
+
+Виконав:                                                                           Перевірив:
+ст. гр. ПЗПІ-23-6                        				ст. викладач кафедри ПІ
+Дубіна Станіслав Геннадійович				Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+
+ЗАВДАННЯ
+
+Розробити калькулятор на 4 базові арифметичні операції з кнопками для введення аргументів і дій.
+Калькулятор повинен мати адаптивний користувацький інтерфейс у різних орієнтаціях екрану та на екранах різної роздільної здатності.
+
+
+ХІД РОБОТИ
+
+Cтворюємо новий проєкт та обираємо Empty Views Activity.
+Спочатку створимо розмітку інтерфейсу користувача. Я використовую LinearLayout для вертикального розташування елементів. Основні компоненти включають TextView для відображення поточного вводу або результату обчислень та GridLayout для розташування кнопок: цифри від 0 до 9, чотири основні оператори (+, -, ×, ÷), кнопка для введення десяткової крапки, кнопка дорівнює ("=") та кнопка очищення ("C"). TextView використовується для відображення результатів обчислень та вводу чисел. Його текст за замовчуванням встановлено як "0".
+1 <TextView
+2     android:id="@+id/result"
+3     android:layout_width="match_parent"
+4     android:layout_height="wrap_content"
+5     android:layout_marginTop="20dp"
+6     android:text="0"
+7     android:textSize="36sp"
+8     android:gravity="end" />
+
+Кнопки мають однакову висоту і ширину завдяки атрибуту layout_weight. Це дозволяє кнопкам рівномірно заповнювати доступний простір.
+1 <Button
+2    android:id="@+id/btn1"
+3    android:layout_width="0dp"
+4    android:layout_height="wrap_content"
+5    android:layout_weight="1"
+6    android:text="1"
+7    android:textSize="24sp" />
+
+Створюємо змінні для збереження першого числа, другого числа, оператора та результату. 
+1 private String input = "";
+2 private String operator = "";
+3 private double num1 = 0, num2 = 0;
+4 private boolean isResultDisplayed = false;
+
+Структура нашого застосунку наступна: Визначаємо, що саме було натиснуто на кнопці: цифра, крапка або оператор. Якщо була натиснута цифра, перевіряємо, чи був вже вибраний оператор: Якщо оператор ще не вибрано, цифра додається до першого числа. Якщо оператор вже вибрано, цифра додається до другого числа. Якщо була натиснута крапка, перевіряємо: якщо ще не було введено крапки для поточного числа, вона додається. Якщо крапка вже є, нова не буде додана. Якщо натиснуто оператор, зберігаємо: поточне число, оператор, очистимо вхід для другого числа. Якщо натиснуто дорівнює, виконуються обчислення: перше і друге число перетворюються на числа для обчислень, далі виконуються операції залежно від вибраного оператора. Результат виводиться на екран. Якщо натиснуто «С», скидаються всі змінні і очищується екран.
+
+Обробник кнопок, що визначає, яка кнопка була натиснута:
+1  View.OnClickListener numberClickListener = v -> {
+2      if (isResultDisplayed) {
+3          input = "";
+4          isResultDisplayed = false;
+5      }
+6      Button button = (Button) v;
+7      input += button.getText().toString(); 
+8      result.setText(input); 
+9  };
+
+Обробка кнопки крапки:
+Додається перевірка на вже наявну кому у числі. Приклад:
+1  findViewById(R.id.btnDot).setOnClickListener(v -> {
+2      if (!input.contains(".")) { 
+3          if (input.isEmpty()) { 
+4              input = "0.";
+5          } else {
+6              input += ".";
+7          }
+8          result.setText(input);
+9      }
+10 });
+
+Обробка операторів:
+Зберігається перше число та оператор, а рядок введення обнуляється.
+1  View.OnClickListener operatorClickListener = v -> {
+2      if (!input.isEmpty()) {
+3          num1 = Double.parseDouble(input);
+4          input = "";
+5          Button button = (Button) v;
+6          operator = button.getText().toString();
+7      }
+8  };
+
+Обчислення результату:
+При натисканні кнопки = числа конвертуються у double, обчислюється результат залежно від оператора:
+1  findViewById(R.id.btnEquals).setOnClickListener(v -> {
+2      if (!input.isEmpty() && !operator.isEmpty()) {
+3          try {
+4              num2 = Double.parseDouble(input);
+5              double resultValue = 0;
+6              switch (operator) {
+7                  case "+":
+8                      resultValue = num1 + num2;
+9                      break;
+10                 case "-":
+11                     resultValue = num1 - num2;
+12                     break;
+13                 case "×":
+14                     resultValue = num1 * num2;
+15                     break;
+16                 case "÷":
+17                     if (num2 == 0) {
+18                         result.setText("Помилка");
+19                         return;
+20                     }
+21                     resultValue = num1 / num2;
+22                     break;
+23             }
+24             if (resultValue == (long) resultValue) {
+25                 result.setText(String.valueOf((long) resultValue));
+26             } else {
+27                 result.setText(String.valueOf(resultValue));
+28             }
+29             input = String.valueOf(resultValue);
+30             operator = "";
+31             isResultDisplayed = true;
+32         } catch (Exception e) {
+33             result.setText("Помилка");
+34         }
+35     }
+36 });
+
+Очищення даних:
+Змінні обнуляються, а результат скидається до "0".
+1  findViewById(R.id.btnClear).setOnClickListener(v -> {
+2      input = "";
+3      operator = "";
+4      num1 = num2 = 0;
+5      result.setText("0");
+6      isResultDisplayed = false;
+7  });
+
+Всі змінні зберігаються та відновлюються у Bundle за допомогою методів onSaveInstanceState.
+
+
+ВИСНОВКИ
+
+Під час лабораторної роботи було створено додаток простого калькулятора на 4 базові дії, закріплено знання з обробки подій при використанні кнопок, обчислення записаних з кнопок змінних та відображення результату на екрані.
+Відеозвіт на YouTube. URL: https://youtu.be/Dqk3YFf3Afk
+
+
+ВИКОРИСТАНІ ДЖЕРЕЛА
+
+1. GridLayout | Android Developers. URL: https://developer.android.com/reference/android/widget/GridLayout (дата звернення: 14.12.2024).
+
+ДОДАТОК А
+activity_main.xml
+
+1 <?xml version="1.0" encoding="utf-8"?>
+2 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+3     xmlns:tools="http://schemas.android.com/tools"
+4     android:layout_width="match_parent"
+5     android:layout_height="match_parent"
+6     android:gravity="center"
+7     android:orientation="vertical"
+8     android:padding="16dp"
+9     tools:context=".MainActivity">
+10    <TextView
+11        android:id="@+id/result"
+12        android:layout_width="match_parent"
+13        android:layout_height="wrap_content"
+14        android:layout_marginBottom="16dp"
+15        android:gravity="end"
+16        android:padding="16dp"
+17        android:text="0"
+18        android:textSize="32sp" />
+19    <GridLayout
+20        android:layout_width="match_parent"
+21        android:layout_height="wrap_content"
+22        android:layout_marginTop="8dp"
+23        android:layout_marginBottom="8dp"
+24        android:columnCount="4"
+25        android:rowCount="5">
+26        <Button
+27            android:id="@+id/btn7"
+28            android:layout_width="0dp"
+29            android:layout_height="wrap_content"
+30            android:layout_columnWeight="1"
+31            android:text="7" />
+32        <Button
+33            android:id="@+id/btn8"
+34            android:layout_width="0dp"
+35            android:layout_height="wrap_content"
+36            android:layout_columnWeight="1"
+37            android:text="8" />
+38        <Button
+39            android:id="@+id/btn9"
+40            android:layout_width="0dp"
+41            android:layout_height="wrap_content"
+42            android:layout_columnWeight="1"
+43            android:text="9" />
+44        <Button
+45            android:id="@+id/btnDivide"
+46            android:layout_width="0dp"
+47            android:layout_height="wrap_content"
+48            android:layout_columnWeight="1"
+49            android:text="÷" />
+50        <Button
+51            android:id="@+id/btn4"
+52            android:layout_width="0dp"
+53            android:layout_height="wrap_content"
+54            android:layout_columnWeight="1"
+55            android:text="4" />
+56        <Button
+57            android:id="@+id/btn5"
+58            android:layout_width="0dp"
+59            android:layout_height="wrap_content"
+60            android:layout_columnWeight="1"
+61            android:text="5" />
+62        <Button
+63            android:id="@+id/btn6"
+64            android:layout_width="0dp"
+65            android:layout_height="wrap_content"
+66            android:layout_columnWeight="1"
+67            android:text="6" />
+68        <Button
+69            android:id="@+id/btnMultiply"
+70            android:layout_width="0dp"
+71            android:layout_height="wrap_content"
+72            android:layout_columnWeight="1"
+73            android:text="×" />
+74        <Button
+75            android:id="@+id/btn1"
+76            android:layout_width="0dp"
+77            android:layout_height="wrap_content"
+78            android:layout_columnWeight="1"
+79            android:text="1" />
+80        <Button
+81            android:id="@+id/btn2"
+82            android:layout_width="0dp"
+83            android:layout_height="wrap_content"
+84            android:layout_columnWeight="1"
+85            android:text="2" />
+86        <Button
+87            android:id="@+id/btn3"
+88            android:layout_width="0dp"
+89            android:layout_height="wrap_content"
+90            android:layout_columnWeight="1"
+91            android:text="3" />
+92        <Button
+93            android:id="@+id/btnMinus"
+94            android:layout_width="0dp"
+95            android:layout_height="wrap_content"
+96            android:layout_columnWeight="1"
+97            android:text="-" />
+98        <Button
+99            android:id="@+id/btnDot"
+100           android:layout_width="0dp"
+101           android:layout_height="wrap_content"
+102           android:layout_columnWeight="1"
+103           android:text="." />
+104       <Button
+105           android:id="@+id/btn0"
+106           android:layout_width="0dp"
+107           android:layout_height="wrap_content"
+108           android:layout_columnWeight="1"
+109           android:text="0" />
+110       <Button
+111           android:id="@+id/btnEquals"
+112           android:layout_width="0dp"
+113           android:layout_height="wrap_content"
+114           android:layout_columnWeight="1"
+115           android:text="=" />
+116       <Button
+117           android:id="@+id/btnPlus"
+118           android:layout_width="0dp"
+119           android:layout_height="wrap_content"
+120           android:layout_columnWeight="1"
+121           android:text="+" />
+122       <Button
+123           android:id="@+id/btnClear"
+124           android:layout_width="0dp"
+125           android:layout_height="wrap_content"
+126           android:layout_columnWeight="1"
+127           android:text="C" />
+128   </GridLayout>
+129 </LinearLayout>
+
+
+ДОДАТОК Б
+MainActivity.java
+
+1 package nure.dubina.stanislav.lab_task_3;
+2 import android.os.Bundle;
+3 import android.view.View;
+4 import android.widget.Button;
+5 import android.widget.TextView;
+6 import androidx.appcompat.app.AppCompatActivity;
+7 public class MainActivity extends AppCompatActivity {
+8     private TextView result;
+9     private String input = "";
+10    private String operator = "";
+11    private double num1 = 0, num2 = 0;
+12    private boolean isResultDisplayed = false;
+13    @Override
+14    protected void onCreate(Bundle savedInstanceState) {
+15        super.onCreate(savedInstanceState);
+16        setContentView(R.layout.activity_main);
+17        result = findViewById(R.id.result);
+18        result.setFocusable(false);
+19    }
+20    @Override
+21    protected void onStart() {
+22        super.onStart();
+23        int[] numberButtons = {
+24            R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, 
+25            R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9
+26        };
+
+27        View.OnClickListener numberClickListener = v -> {
+28            if (isResultDisplayed) {
+29                input = "";
+30                isResultDisplayed = false;
+31            }
+32            Button button = (Button) v;
+33            input += button.getText().toString();
+34            result.setText(input);
+35        };
+36        for (int id : numberButtons) {
+37            findViewById(id).setOnClickListener(numberClickListener);
+38        }
+39        findViewById(R.id.btnDot).setOnClickListener(v -> {
+40            if (!input.contains(".")) {
+41                if (input.isEmpty()) {
+42                    input = "0.";
+43                } else {
+44                    input += ".";
+45                }
+46                result.setText(input);
+47            }
+48        });
+49        int[] operatorButtons = {
+50            R.id.btnPlus, R.id.btnMinus, R.id.btnMultiply, R.id.btnDivide
+51        };
+52        View.OnClickListener operatorClickListener = v -> {
+53            if (!input.isEmpty()) {
+54                num1 = Double.parseDouble(input);
+55                input = "";
+56                Button button = (Button) v;
+57                operator = button.getText().toString();
+58            }
+59        };
+60        for (int id : operatorButtons) {
+61            findViewById(id).setOnClickListener(operatorClickListener);
+62        }
+63        findViewById(R.id.btnEquals).setOnClickListener(v -> {
+64            if (!input.isEmpty() && !operator.isEmpty()) {
+65                try {
+66                    num2 = Double.parseDouble(input);
+67                    double resultValue = 0;
+68                    switch (operator) {
+69                        case "+":
+70                            resultValue = num1 + num2;
+71                            break;
+72                        case "-":
+73                            resultValue = num1 - num2;
+74                            break;
+75                        case "×":
+76                            resultValue = num1 * num2;
+77                            break;
+78                        case "÷":
+79                            if (num2 == 0) {
+80                                result.setText("Помилка");
+81                                return;
+82                            }
+83                            resultValue = num1 / num2;
+84                            break;
+85                        default:
+86                            result.setText("Помилка");
+87                            return;
+88                    }
+89                    if (resultValue == (long) resultValue) {
+90                        result.setText(String.valueOf((long) resultValue));
+91                    } else {
+92                        result.setText(String.valueOf(resultValue));
+93                    }
+94                    input = String.valueOf(resultValue);
+95                    operator = "";
+96                    isResultDisplayed = true;
+97                } catch (Exception e) {
+98                    result.setText("Помилка");
+99                }
+100           }
+101       });
+102       findViewById(R.id.btnClear).setOnClickListener(v -> {
+103           input = "";
+104           operator = "";
+105           num1 = num2 = 0;
+106           result.setText("0");
+107           isResultDisplayed = false;
+108       });
+109   }
+110 }
+2
+
+
