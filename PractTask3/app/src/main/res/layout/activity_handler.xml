@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".HandlerActivity"
+    android:orientation="vertical"
+    android:gravity="center" >
+
+    <Button
+        android:id="@+id/startHandlerButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Handler" />
+
+    <TextView
+        android:id="@+id/handlerMessageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Message will appear here"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>
