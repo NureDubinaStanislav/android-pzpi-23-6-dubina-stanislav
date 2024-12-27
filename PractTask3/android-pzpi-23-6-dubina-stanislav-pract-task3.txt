@@ -1,0 +1,356 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+Звіт
+з практичної роботи № 3 з дисципліни
+Програмування під Android
+   
+
+
+
+
+
+Виконав:                                                                                     Перевірив:
+ст. гр. ПЗПІ-23-6                       				ст. викладач кафедри ПІ
+Дубіна Станіслав Геннадійович				Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+Харків 2024
+
+ЗАВДАННЯ
+
+− Ознайомитися з основними типами діалогових панелей в Android.
+− Навчитися створювати та використовувати діалогові панелі в Android-застосунках.
+− Засвоїти методи для налаштування діалогових панелей та їх взаємодії з користувачем. 
+− Засвоїти концепцію черги повідомлень (Message Queue) в Android.
+− Вивчити роботу з обробником повідомлень (Handler) для взаємодії з потоками.
+− Навчитися створювати та використовувати Handler для асинхронної обробки даних.
+− Навчися працювати з компонентом RecyclerView для створення списків із прогортанням в Android
+− Ознайомитися їх з принципами створення та використання адаптерів (Adapters) і керування даними у списках.
+
+ХІД РОБОТИ
+
+     Додаємо кнопку до основної розмітки (activity_main.xml), яка ініціюватиме показ діалогової панелі:
+
+      1 <Button
+      2     android:id="@+id/showDialogButton"
+      3     android:layout_width="wrap_content"
+      4     android:layout_height="wrap_content"
+      5     android:layout_marginTop="20dp"
+      6     android:text="Show Dialog"
+      7     app:layout_constraintEnd_toEndOf="parent"
+      8     app:layout_constraintStart_toStartOf="parent"
+      9     app:layout_constraintTop_toTopOf="parent" />
+      
+     У файлі MainActivity.java реалізуємо логіку для показу AlertDialog:
+
+      1 Button showDialogButton = findViewById(R.id.showDialogButton);
+      2 TextView textView = findViewById(R.id.textView);
+      3 showDialogButton.setOnClickListener(new View.OnClickListener() {
+      4     @Override
+      5     public void onClick(View v) {
+      6         new AlertDialog.Builder(MainActivity.this)
+      7                 .setTitle("Діалог")
+      8                 .setMessage("Це приклад AlertDialog.")
+      9                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+      10                    public void onClick(DialogInterface dialog, int which) {
+      11                        // Дія при натисканні OK
+      12                    }
+      13                })
+      14                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+      15                    public void onClick(DialogInterface dialog, int which) {
+      16                        // Дія при натисканні Cancel
+      17                    }
+      18                })
+      19                .show();
+      20     }
+      21 });
+      
+     Додаємо кнопку для виклику DatePickerDialog:
+     
+1 <Button
+2     android:id="@+id/showDatePickerButton"
+3     android:layout_width="wrap_content"
+4     android:layout_height="wrap_content"
+5     android:layout_marginTop="20dp"
+6     android:text="Show DatePicker"
+7     app:layout_constraintEnd_toEndOf="parent"
+8     app:layout_constraintStart_toStartOf="parent"
+9     app:layout_constraintTop_toBottomOf="@+id/showDialogButton" />
+
+     У MainActivity реалізуємо показ DatePickerDialog:
+
+1 Button showDatePickerButton = findViewById(R.id.showDatePickerButton);
+2 showDatePickerButton.setOnClickListener(new View.OnClickListener() {
+3     @Override
+4     public void onClick(View v) {
+5         DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this,
+6                 new DatePickerDialog.OnDateSetListener() {
+7                     @Override
+8                     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+9                         // Обробка вибраної дати
+10                    }
+11                }, 2023, 8, 1);
+12         datePickerDialog.show();
+13     }
+14 });
+
+     Створимо новий XML-файл для індивідуальної діалогової панелі (custom_dialog.xml):
+
+1 <?xml version="1.0" encoding="utf-8"?>
+2 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+3     android:layout_width="wrap_content"
+4     android:layout_height="wrap_content"
+5     android:orientation="vertical"
+6     android:padding="16dp">
+7
+8     <TextView
+9         android:id="@+id/customDialogText"
+10         android:layout_width="wrap_content"
+11         android:layout_height="wrap_content"
+12         android:text="Це індивідуальна діалогова панель" />
+13
+14     <EditText
+15         android:id="@+id/customDialogInput"
+16         android:layout_width="match_parent"
+17         android:layout_height="wrap_content"
+18         android:hint="Введіть текст" />
+19
+20 </LinearLayout>
+
+     Реалізуємо показ Custom Dialog у MainActivity:
+1 Button showCustomDialogButton = findViewById(R.id.showCustomDialogButton);
+2 showCustomDialogButton.setOnClickListener(new View.OnClickListener() {
+3     @Override
+4     public void onClick(View v){
+5         LayoutInflater inflater = getLayoutInflater();
+6         View dialogView = inflater.inflate(R.layout.custom_dialog, null);
+7
+8         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+9         builder.setView(dialogView)
+10                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+11                    public void onClick(DialogInterface dialog, int id) {
+12                        // Обробка даних
+13                    }
+14                })
+15                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+16                     public void onClick(DialogInterface dialog, int id) {
+17                         // Закриття діалогу
+18                     }
+19                 });
+20         builder.create().show();
+21     }
+22 });
+
+     Перейдемо до обробнику черг повідомлень (Handler).  Створимо нову Activity з назвою HandlerActivity та виведемо повідомлення у текстове поле через 2 секунди:
+
+1 startHandlerButton.setOnClickListener(new View.OnClickListener() {
+2     @Override
+3     public void onClick(View v) {
+4         handler.postDelayed(new Runnable() {
+5             @Override
+6             public void run() {
+7                 TextView textView = findViewById(R.id.handlerMessageTextView);
+8                 textView.setText("Handler executed after delay");
+9             }
+10        }, 2000);
+11     }
+12 });
+
+     Оновимо приклад для взаємодії з фоновим потоком, та будемо виводити повідомлення в текстове поле з нього.
+     
+1 new Thread(new Runnable() {
+2     @Override
+3     public void run() {
+4         try {
+5             Thread.sleep(2000);
+6         } catch (InterruptedException e) {
+7             throw new RuntimeException(e);
+8         }
+9         handler.post(new Runnable() {
+10            @Override
+11            public void run() {
+12                TextView textView = findViewById(R.id.handlerMessageTextView);
+13                textView.setText("Updated from background thread");
+14            }
+15        });
+16    }
+17 }).start();
+
+     Оновимо приклад для використання об’єкта Message та виведемо це повідомлення у текстове поле: 
+     
+1 Button startHandlerButton = findViewById(R.id.startHandlerButton);
+2 TextView handlerMessageTextView = findViewById(R.id.handlerMessageTextView);
+3 Handler handler = new Handler(Looper.getMainLooper()) {
+4     @Override
+5     public void handleMessage(Message msg){
+6         handlerMessageTextView.setText("Message received: " + msg.what);
+7     }
+8 };
+9
+10 new Thread(new Runnable() {
+11    @Override
+12    public void run() {
+13        try {
+14            Thread.sleep(5000);
+15        } catch (InterruptedException e) {
+16            e.printStackTrace();
+17        }
+18
+19        Message msg = handler.obtainMessage();
+20        msg.what = 1;
+21        handler.sendMessage(msg);
+22    }
+23 }).start();
+
+     Створимо фоновий потік за допомогою HandlerThread та виведемо повідомлення у текстове поле з нього:
+     
+      1 Button startHandlerThreadButton = findViewById(R.id.startHandlerThreadButton);
+      2 startHandlerThreadButton.setOnClickListener(v -> {
+      3     HandlerThread handlerThread = new HandlerThread("BackgroundThread");
+      4     handlerThread.start();
+      5     Handler backgroundHandler = new Handler(handlerThread.getLooper());
+      6 
+      7     backgroundHandler.post(() -> {
+      8         try {
+      9             Thread.sleep(4000);
+      10        } catch (InterruptedException e) {
+      11            e.printStackTrace();
+      12        }
+      13 
+      14        handler.post(() -> textView.setText("Updated from HandlerThread"));
+      15    });
+      16 });
+
+     Переходимо до роботи з RecyclerView.
+     Додамо RecyclerView у activity_recycler_view.xml:
+
+1 <androidx.recyclerview.widget.RecyclerView
+2     android:id="@+id/recyclerView"
+3     android:layout_width="match_parent"
+4     android:layout_height="wrap_content"
+5     android:paddingVertical="10dp" />
+
+     Створимо MyAdapter, який буде спадкувати RecyclerView.Adapter. Створимо внутрішній клас ViewHolder, який буде спадкувати RecyclerView.ViewHolder, для збереження посилань на елементи інтерфейсу:
+
+1 public static class ViewHolder extends RecyclerView.ViewHolder {
+2     public TextView textView;
+3 
+4     public ViewHolder(View v) {
+5         super(v);
+6         textView = v.findViewById(R.id.textView);
+7     }
+8 }
+
+     Реалізуємо методи onCreateViewHolder(), onBindViewHolder() і getItemCount() в адаптері:
+
+1 @NonNull
+2 @Override
+3 public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+4     View v = LayoutInflater.from(parent.getContext())
+5             .inflate(R.layout.list_item, parent, false);
+6     return new ViewHolder(v);
+7 }
+8
+9 @Override
+10 public void onBindViewHolder(ViewHolder holder, int position) {
+11    holder.textView.setText(mData[position]);
+12    holder.itemView.setOnClickListener(new View.OnClickListener() {
+13        @Override
+14        public void onClick(View v) {
+15            Toast.makeText(v.getContext(), mData[holder.getAdapterPosition()], Toast.LENGTH_LONG).show();
+16        }
+17    });
+18 }
+19
+20 @Override
+21 public int getItemCount() {
+22     return mData.length;
+23 }
+
+Створимо макет для елементів списку:
+
+1 <?xml version="1.0" encoding="utf-8"?>
+2 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+3     android:layout_width="match_parent"
+4     android:layout_height="wrap_content"
+5     android:orientation="vertical" >
+6
+7     <TextView
+8         android:id="@+id/textView"
+9         android:layout_width="wrap_content"
+10         android:layout_height="wrap_content"
+11         android:text="TextView" />
+12
+13     <ImageView
+14         android:layout_width="250dp"
+15         android:layout_height="50dp"
+16         android:src="@drawable/dl_nure" />
+17
+18 </LinearLayout>
+     
+     Підключимо RecyclerView до адаптера в MainActivity та налаштуємо LayoutManager для нього (наприклад, лінійний макет):
+
+1 RecyclerView recyclerView = findViewById(R.id.recyclerView);
+2 recyclerView.setLayoutManager(new LinearLayoutManager(this));
+3 String[] data = new String[20];
+4 for (int i = 0; i < data.length; i++) {
+5     data[i] = "Hello World!";
+6 }
+7 MyAdapter adapter = new MyAdapter(data);
+8 recyclerView.setAdapter((adapter));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ВИСНОВКИ
+
+     Під час практичної роботи було створено застосунок для ознайомлення та опановування діалогових панелей; засвоєно концепції черги повідомлень, оброки подій Handler;  опрацьовано компонент RecyclerView для створення списків із прогортанням в Android та використання адаптерів (Adapters), керування даними у списках.
+   Відеозвіт на YouTube. URL: https://youtu.be/DGDeHamUhT0
+
+
+
+ВИКОРИСТАНІ ДЖЕРЕЛА
+
+1. Документація Android Developers dialogs. URL: https://developer.android.com/develop/ui/views/components/dialogs (дата звернення: 27.12.2024)
+2. Документація AndroidDevelopers handlers. URL: https://developer.android.com/reference/android/os/Handler (дата звернення: 27.12.2024)
+3. Документація AndroidDevelopers Recycler View. URL: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView (дата звернення: 27.12.2024)
+2
+
+
