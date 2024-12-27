@@ -1,0 +1,224 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+Звіт
+з практичної роботи №4 з дисципліни
+Програмування під Android
+   
+
+
+
+
+
+Виконав:                                                                                     Перевірив:
+ст. гр. ПЗПІ-23-6                       				ст. викладач кафедри ПІ
+Дубіна Станіслав Геннадійович				Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+
+ЗАВДАННЯ
+
+− Ознайомитися з роботою SharedPreferences для збереження налаштувань застосунку.
+− Опанувати роботу з базою даних SQLite: створення, збереження та отримання даних.
+− Вивчити роботу з файлами для збереження даних у внутрішній або зовнішній пам'яті.
+
+
+
+ХІД РОБОТИ
+     Створимо простий застосунок, який дозволяє зберігати та відображати налаштування користувача (наприклад, ім'я та вік).
+     Код файлу розмітки головної активності наведений у додатку А.
+     При натисканні на кнопку дані мають записуватися у SharedPreferences, а при перезапуску застосунку — автоматично зчитуватися. Цю поведінку реалізує наступний код:
+
+1 sharedPreference.setOnClickListener(view -> {
+2     SharedPreferences.Editor editor = sharedPreferences.edit();
+3     editor.putString("Name", nameEditText.getText().toString());
+4     editor.putInt("Age", ageEditText.getText().toString().isEmpty() ? 0 : Integer.parseInt(ageEditText.getText().toString()));
+5     editor.apply();
+6 });
+7 
+8 String name = sharedPreferences.getString("Name", "");
+9 int age = sharedPreferences.getInt("Age", -1);
+10 nameEditText.setText(name);
+
+Створимо базу даних для збереження інформації про користувачів (ім'я, вік). Для цього створимо новий клас DBHelper:
+
+1 public class DBHelper extends SQLiteOpenHelper {
+2 
+3     public DBHelper(Context context) {
+4         super(context, "MyDB", null, 1);
+5     }
+6 
+7     @Override
+8     public void onCreate(SQLiteDatabase db) {
+9         db.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)");
+10     }
+11 
+12     @Override
+13     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+14 
+15     }
+16 }
+
+     Реалізуємо додавання нових користувачів у базу через форму введення:
+
+1         saveIntoDb.setOnClickListener(view -> {
+2             ContentValues values = new ContentValues();
+3             values.put("name", nameEditText.getText().toString());
+4             values.put("age", ageEditText.getText().toString().isEmpty() ? 0 : Integer.parseInt(ageEditText.getText().toString()));
+5             dbHelper.getWritableDatabase().insert("users", null, values);
+6             adapter.addUser(new User(nameEditText.getText().toString(), ageEditText.getText().toString().isEmpty() ? 0 : Integer.parseInt(ageEditText.getText().toString())));
+7         });
+
+     Відобразимо список користувачів на екрані. Для цього використаємо RecyclerView. 
+     Додамо новий клас User:
+
+1 public class User {
+2 
+3     private String name;
+4     private int age;
+5 
+6     public User(String name, int age) {
+7         this.name = name;
+8         this.age = age;
+9     }
+10 
+11     public String getName() {
+12         return name;
+13     }
+14 
+15     public int getAge() {
+16         return age;
+17     }
+18 }
+
+     Створимо адаптер для RecyclerView та файл розмітки для елемента списку. 
+
+1         Cursor cursor = dbHelper.getReadableDatabase().query("users", null, null, null, null, null, null);
+2         while (cursor.moveToNext()) {
+3             String name = cursor.getString(cursor.getColumnIndex("name"));
+4             int age = cursor.getInt(cursor.getColumnIndex("age"));
+5             User user = new User(name, age);
+6             adapter.addUser(user);
+7         }
+8         cursor.close();
+     
+     Також будемо оновлювати список при додаванні нового користувача до бази даних (додамо виклик методу адаптера addPerson до методу додавання користувача до бази даних):
+     
+1     public void addUser(User user) {
+2         users.add(user);
+3         notifyDataSetChanged();
+4     }
+
+     Створимо функціонал для запису текстових даних (введеного імені користувача) у файл при натисканні на кнопку:
+     
+1         EditText editText = findViewById(R.id.editText);
+2         Button writeFile = findViewById(R.id.writeFile);
+3         Button readFile = findViewById(R.id.readFile);
+4 
+5         writeFile.setOnClickListener(view -> {
+6 
+7             FileOutputStream fos = null;
+8             try {
+9                 fos = openFileOutput("myfile.txt", Context.MODE_PRIVATE);
+10 
+11                 fos.write(editText.getText().toString().getBytes());
+12                 fos.close();
+13 
+14             } catch (IOException e) {
+15                 throw new RuntimeException(e);
+16             }
+17         });
+     
+     Реалізуємо можливість зчитування цього файлу та відображення вмісту на екрані (у полі вводу імені) при натисканні на кнопку :
+     
+1         readFile.setOnClickListener(view -> {
+2             FileInputStream fis = null;
+3             try {
+4                 fis = openFileInput("myfile.txt");
+5 
+6                 int c;
+7                 String temp = "";
+8                 while ((c = fis.read()) != -1) {
+9                     temp = temp + Character.toString((char) c);
+10                }
+11                fis.close();
+12                editText.setText(temp);
+13            } catch (IOException e) {
+14                throw new RuntimeException(e);
+15            }
+16        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ВИСНОВКИ
+У ході практичної роботи було вивчено основні методи збереження даних в Android. Розглянуто використання SharedPreferences для збереження простих налаштувань користувача у форматі пар ключ-значення. Опрацьовано застосування SQLite для роботи з реляційною базою даних, що дозволяє зберігати великі обсяги структурованої інформації. Також було досліджено методи запису та зчитування даних із локального сховища додатка за допомогою роботи з файлами.
+Відеозвіт на YouTube. URL: https://youtu.be/71nWCByptuw
+
+
+
+ВИКОРИСТАНІ ДЖЕРЕЛА
+
+1.	Документація AndroidDevelopers SharedPreferences. URL: https://developer.android.com/training/data-storage/shared-preferences (дата звернення: 27.12.2024)
+2.	Документація AndroidDevelopers Save data using SQLite. URL: https://developer.android.com/training/data-storage/sqlite (дата звернення: 27.12.2024)
+3.	Документація AndroidDevelopers SQLiteDatabase. URL: https://developer.android.com/reference/android/database/sqlite/SQLiteDatabase (дата звернення: 27.12.2024)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ДОДАТОК А
+Код програми
+Повний код застосунку на GitHub: https://github.com/NureDubinaStanislav/android-pzpi-23-6-dubina-stanislav
+2
+
+
