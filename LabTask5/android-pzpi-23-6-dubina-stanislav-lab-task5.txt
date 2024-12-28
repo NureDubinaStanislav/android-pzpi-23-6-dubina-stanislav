@@ -1,0 +1,240 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+Звіт
+з лабораторної роботи №5 з дисципліни
+Програмування під Android
+   
+
+
+
+
+
+Виконав:                                                                                Перевірив:
+ст. гр. ПЗПІ-23-6                       				     ст. викладач кафедри ПІ
+Дубіна Станіслав Геннадійович	                                   Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+
+ЗАВДАННЯ
+
+     Доповнити завдання №4 наступними функціями:
+1. реалізувати різне відображення для портретної та ланшафтної орієнтації екрану за допомогою тих самих фрагментів;
+2. створити дві редаговані теми (тло, гарнітура шрифту, колір тексту тощо) і застосовувати їх в залежності від налаштувань програми.
+3. додати можливість задавати в налаштуваннях програми розмір шрифту.
+     Переробити завдання №4 так, щоб дані нотаток зберігалися у базі даних SQLite.
+
+ХІД РОБОТИ
+
+     Замість двох активностей, використаємо одну активність MainActivity і фрагменти для представлення інтерфейсу додатку.
+      Перехід між фрагментами здійснюється через FragmentManager.
+     
+      1     private void replaceFragment(Fragment fragment) {
+      2         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+      3         transaction.replace(R.id.fragment_container, fragment);
+      4         transaction.commit();
+      5     }
+     
+     У розмітці MainActivity додаємо контейнер для активного фрагменту:
+     
+1 <?xml version="1.0" encoding="utf-8"?>
+2 <androidx.constraintlayout.widget.ConstraintLayout
+3     xmlns:android="http://schemas.android.com/apk/res/android"
+4     xmlns:tools="http://schemas.android.com/tools"
+5     android:id="@+id/fragment_container"
+6     android:layout_width="match_parent"
+7     android:layout_height="match_parent"
+8     tools:context=".MainActivity">
+9 </androidx.constraintlayout.widget.ConstraintLayout>
+	
+     Для кожного фрагменту використовуються дві окремі розмітки: одна для ландшафтної (layout-land) і одна для портретної орієнтації (layout).
+     У файлі themes.xml реалізовано дві теми і кольори для них: світлу та темну.
+
+1     <style name="Base.Theme.LabTask5" parent="Theme.Material3.DayNight">
+2         <item name="android:fontFamily">@font/roboto_mono_variable_font</item>
+3     </style>
+4 
+5     <style name="Theme.LabTask5" parent="Base.Theme.LabTask5" />
+6 
+7     <style name="Base.Theme.LabTask5" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+8         <item name="colorPrimary">#BB86FC</item>
+9         <item name="colorPrimaryVariant">#9B5DE5</item>
+10        <item name="colorOnPrimary">#FFFFFF</item>
+11 
+12        <item name="colorSecondary">#C084FC</item>
+13        <item name="colorSecondaryVariant">#B185DB</item>
+14        <item name="colorOnSecondary">#FFFFFF</item>
+15 
+16        <item name="android:background">#1F1B24</item>
+17        <item name="android:textColor">#FFFFFF</item>
+18 
+19        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+20        <item name="android:navigationBarColor">?attr/colorPrimaryVariant</item>
+21 
+22        <item name="android:fontFamily">@font/oswald_variable_font</item>
+23    </style>
+	
+	Під час створення MainActivity викликається метод toggleTheme
+
+1     private void toggleTheme() {
+2         boolean isNightMode = (getResources().getConfiguration().uiMode &
+3                 android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+4                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+5 
+6         if (isNightMode) {
+7             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+8         } else {
+9             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+10        }
+11        requireActivity().recreate();
+12    }
+     
+     Розмір шрифту змінюється через кнопку в ActionBar:
+      
+1     private void toggleTextSize() {
+2         textSize = (textSize == 14f) ? 18f : 14f;
+3         notesAdapter.setTextSize(textSize);
+4         notesAdapter.notifyDataSetChanged();
+5         Toast.makeText(getContext(), "Розмір шрифту: " + textSize + "sp", Toast.LENGTH_SHORT).show();
+6     }
+
+     Для збереження даних нотаток використовується база даних. Клас NoteDBHelper відповідає за створення структури бази даних:
+     
+      1     private static final String DATABASE_NAME = "notes.db";
+      2     private static final int DATABASE_VERSION = 1;
+      3 
+      4     private static final String TABLE_NOTES = "notes";
+      5     private static final String COLUMN_ID = "id";
+      6     public static final String COLUMN_TITLE = "title";
+      7     public static final String COLUMN_DESCRIPTION = "description";
+      8     public static final String COLUMN_IMPORTANCE = "importance";
+      9     public static final String COLUMN_DATE_TIME = "dateTime";
+      10    public static final String COLUMN_IMAGE_URI = "imageUri";
+      11
+      12    private static final String TABLE_CREATE =
+      13            "CREATE TABLE " + TABLE_NOTES + " (" +
+      14                    COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+      15                    COLUMN_TITLE + " TEXT, " +
+      16                    COLUMN_DESCRIPTION + " TEXT, " +
+      17                    COLUMN_DATE_TIME + " TEXT, " +
+      18                    COLUMN_IMPORTANCE + " INTEGER, " +
+      19                    COLUMN_IMAGE_URI + " TEXT);";
+      20
+      21    public NoteDBHelper(Context context) {
+      22        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+      23    }
+      24
+      25    @Override
+      26    public void onCreate(SQLiteDatabase db) {
+      27        db.execSQL(TABLE_CREATE);
+      28    }
+     
+     Також клас DBHelper виконує всі основні операції з базою даних(CRUD).
+     Метод отримання нотатки за ідентифікатором:
+     
+      1     public List<Note> getAllNotes() {
+      2         List<Note> notes = new ArrayList<>();
+      3         SQLiteDatabase db = this.getReadableDatabase();
+      4         Cursor cursor = db.query(TABLE_NOTES, null, null, null, null, null, COLUMN_DATE_TIME + " DESC");
+      5 
+      6         if (cursor != null && cursor.moveToFirst()) {
+      7             do {
+      8                 String imageUriString = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_IMAGE_URI));
+      9                 Uri imageUri = (imageUriString != null && !imageUriString.isEmpty()) ? Uri.parse(imageUriString) : null;
+      10                Log.d("Database", "Loaded Image URI: " + imageUriString);
+      11
+      12                Note note = new Note(
+      13                        cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)),
+      14                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TITLE)),
+      15                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION)),
+      16                        cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IMPORTANCE)),
+      17                        cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DATE_TIME)),
+      18                        imageUri
+      19                );
+      20                notes.add(note);
+      21            } while (cursor.moveToNext());
+      22            cursor.close();
+      23        }
+      24        db.close();
+      25        return notes;
+      26    }
+     
+     Метод додавання нової нотатки:
+     
+1     public int addNote(Note note) {
+2         SQLiteDatabase db = this.getWritableDatabase();
+3         ContentValues values = new ContentValues();
+4         values.put(COLUMN_TITLE, note.getTitle());
+5         values.put(COLUMN_DESCRIPTION, note.getDescription());
+6         values.put(COLUMN_DATE_TIME, note.getDateTime());
+7         values.put(COLUMN_IMPORTANCE, note.getImportance());
+8         values.put(COLUMN_IMAGE_URI, note.getImageUri() != null ? note.getImageUri().toString() : null);
+9 
+10        int id = (int) db.insert(TABLE_NOTES, null, values);
+11        db.close();
+12        return id;
+13    }
+	
+     Оновлення нотатки:
+
+1     public int updateNote(Note note) {
+2         SQLiteDatabase db = this.getWritableDatabase();
+3         ContentValues values = new ContentValues();
+4 
+5         values.put(COLUMN_TITLE, note.getTitle());
+6         values.put(COLUMN_DESCRIPTION, note.getDescription());
+7         values.put(COLUMN_DATE_TIME, note.getDateTime());
+8         values.put(COLUMN_IMPORTANCE, note.getImportance());
+9         values.put(COLUMN_IMAGE_URI, (note.getImageUri() != null) ? note.getImageUri().toString() : null);
+10 
+11        int rows = db.update(TABLE_NOTES, values, COLUMN_ID + "=?", new String[]{String.valueOf(note.getId())});
+12        db.close();
+13        Log.d("Database", "Rows updated: " + rows);
+14        return rows;
+15    }
+
+     Видалення нотатки:
+1     public void deleteNote(int id) {
+2         SQLiteDatabase db = this.getWritableDatabase();
+3         int rowsDeleted = db.delete(TABLE_NOTES, COLUMN_ID + "=?", new String[]{String.valueOf(id)});
+4         db.close();
+5         Log.d("Database", "Rows deleted: " + rowsDeleted);
+6     }
+     
+     Застосунок локалізований українською та англійською мовами файлами strings.xml.
+
+
+ВИСНОВКИ
+
+     У процесі виконання лабораторної роботи було додано нові функції до застосунку для ведення нотаток. Зокрема, реалізовано підтримку портретної та ландшафтної орієнтацій екрану, можливість перемикання між темною і світлою темами, зміну розміру шрифту, а також інтеграцію бази даних SQLite для збереження нотаток.
+     Відеозвіт на YouTube. URL: https://youtu.be/enDqvcMjNSE
+
+
+
+ВИКОРИСТАНІ ДЖЕРЕЛА
+
+1. Документація Android Developers (Теми та стилі). URL: https://developer.android.com/guide/topics/ui/look-and-feel/themes (дата звернення: 28.12.2024).
+ 
+
+ДОДАТОК А
+
+     Повний код застосунку на GitHub: 
+     https://github.com/NureDubinaStanislav/android-pzpi-23-6-dubina-stanislav
+
+2
+
+
