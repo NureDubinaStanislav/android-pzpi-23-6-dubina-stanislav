@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/add_title"
+        android:textSize="20sp"
+        android:textColor="?android:textColorPrimary"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/titleNote"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/title"
+        android:inputType="text"
+        android:padding="8dp"/>
+
+    <EditText
+        android:id="@+id/descriptionNote"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/description"
+        android:inputType="textMultiLine"
+        android:lines="3"
+        android:padding="8dp"/>
+
+    <Spinner
+        android:id="@+id/importance"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:entries="@array/importance_levels"
+        android:padding="8dp"/>
+
+    <Button
+        android:id="@+id/selectButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/select_image" />
+
+    <ImageView
+        android:id="@+id/noteImage"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/save_note" />
+</LinearLayout>
