@@ -1,0 +1,206 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+Звіт
+з лабораторної роботи № 4 з дисципліни
+Програмування під Android
+   
+
+
+
+
+
+Виконав:                                                                           Перевірив:
+ст. гр. ПЗПІ-23-6                        				ст. викладач кафедри ПІ
+Дубіна Станіслав Геннадійович				Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+Харків 2024
+
+ЗАВДАННЯ
+
+     Розробити застосунок для ведення нотаток. Застосунок повинен дозволяти переглядати список нотаток, створювати нову нотатку, редагувати нотатку та видаляти нотатку. Кожна нотатка повинна мати назву, опис, важливість (три класи), час і дату призначення і картинку (вибирається з галереї). У списку нотатки відображаються з іконкою з галереї і часом створення (праворуч зверху більш дрібним шрифтом), а також графічним відображенням класу важливості (іконка з множини).
+     Потрібно реалізувати функції додавання, видалення, редагування (без збереження між перезапуск додатку) нотаток.
+     Видалення/редагування викликаються з контекстного меню при довгому натисненні, додавання - з основного меню в ActionBar. У ActionBar реалізувати пошук / фільтрація заміток за змістом тексту, а також фільтрацію за важливістю. Текстові елементи користувацького інтерфейсу повинні бути локалізовані українською та англійською мовами.
+
+
+ХІД РОБОТИ
+
+     Cтворюємо новий проєкт та обираємо Empty Views Activity.
+     Починаємо із Налаштування головного екрану та RecyclerView. MainActivity відповідає за відображення списку нотаток та навігацію між екранами. Вона містить ініціалізацію компонентів, встановлення RecyclerView із LinearLayoutManager для вертикального списку, підключення адаптера (NoteAdapter) для відображення списку нотаток.
+
+1 notesRecyclerView = findViewById(R.id.recyclerView);
+
+     Далі робимо меню та пошук. Використовується main_menu з сортуванням за важливістю та алфавітом, пошук за текстом:
+     
+1         SearchView searchView = (SearchView) searchMenuItem.getActionView();
+2 
+3         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+4             @Override
+5             public boolean onQueryTextSubmit(String query) {
+6                 filterNotes(query);
+7                 return true;
+8             }
+9 
+10            @Override
+11            public boolean onQueryTextChange(String newText) {
+12                filterNotes(newText);
+13                return true;
+14            }
+15        });
+
+1         if (item.getItemId() == R.id.action_sort) {
+2             toggleSortByImportance();
+3             return true;
+4         } else if (item.getItemId() == R.id.action_sort_az) {
+5             toggleSortByTitle();
+6             return true;
+7         }
+8         return super.onOptionsItemSelected(item);
+
+1     private void toggleSortByImportance() {
+2         List<Note> targetList = filteredNotes.isEmpty() ? allNotes : filteredNotes;
+3         if (sortByImportanceAscending) {
+4             Collections.sort(targetList, (n1, n2) -> Integer.compare(n1.getImportance(), n2.getImportance()));
+5             showToast("Сортування за важливістю (у порядку збільшення)");
+6         } else {
+7             Collections.sort(targetList, (n1, n2) -> Integer.compare(n2.getImportance(), n1.getImportance()));
+8             showToast("Сортування за важливістю (у порядку зменшення)");
+9         }
+10        sortByImportanceAscending = !sortByImportanceAscending;
+11        notesAdapter.notifyDataSetChanged();
+12    }
+13 
+14    private void toggleSortByTitle() {
+15        List<Note> targetList = filteredNotes.isEmpty() ? allNotes : filteredNotes;
+16        if (sortByTitleAscending) {
+17            Collections.sort(targetList, (n1, n2) -> n1.getTitle().compareTo(n2.getTitle()));
+18        } else {
+19            Collections.sort(targetList, (n1, n2) -> n2.getTitle().compareTo(n1.getTitle()));
+20        }
+21        sortByTitleAscending = !sortByTitleAscending;
+22        notesAdapter.notifyDataSetChanged();
+23    }
+
+     Далі робимо додавання нової нотатки. Створюємо відповідну розмітку. Перехід до AddNoteActivity виконується кнопкою:
+     
+1 findViewById(R.id.addNoteButton).setOnClickListener(v -> navigateToAddNoteActivity());
+
+     Тепер робимо фільтрацію та сортування. Нотатки можна фільтрувати за текстом у назві або описі:
+     
+1         filteredNotes.clear();
+2         String lowerCaseQuery = query.toLowerCase();
+3         for (Note note : allNotes) {
+4             if (note.getDescription().toLowerCase().contains(lowerCaseQuery) ||
+5                     note.getTitle().toLowerCase().contains(lowerCaseQuery)) {
+6                 filteredNotes.add(note);
+7             }
+8         }
+9         notesAdapter.notifyDataSetChanged();
+
+      Також реалізуємо сортування за важливістю та алфавітом:
+1         if (sortByImportanceAscending) {
+2             Collections.sort(targetList, (n1, n2) -> Integer.compare(n1.getImportance(), n2.getImportance()));
+3             showToast("Сортування за важливістю (у порядку збільшення)");
+4         } else {
+5             Collections.sort(targetList, (n1, n2) -> Integer.compare(n2.getImportance(), n1.getImportance()));
+6             showToast("Сортування за важливістю (у порядку зменшення)");
+7         }
+
+     Додаємо збереження нотатки з картинкою. AddNoteActivity дозволяє додавати картинку через вибір із галереї:
+1         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+2         startActivityForResult(intent, PICK_IMAGE_REQUEST);
+
+     Обрані зображення зберігаються локально:
+1     private Uri saveImageLocally(Uri sourceUri) {
+2         try {
+3             InputStream inputStream = getContentResolver().openInputStream(sourceUri);
+4             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+5 
+6             String fileName = "note_image_" + UUID.randomUUID().toString() + ".jpg";
+7             OutputStream outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
+8             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+9 
+10            outputStream.close();
+11            inputStream.close();
+12 
+13            return Uri.fromFile(getFileStreamPath(fileName));
+14        } catch (Exception e) {
+15            e.printStackTrace();
+16            return null;
+17        }
+18    }
+     Переходимо до адаптеру для відображення нотаток. NoteAdapter налаштовує вигляд кожного елемента списку. Використовує метод bind для встановлення значень:
+     
+1             title.setText(note.getTitle());
+2             description.setText(note.getDescription());
+3             image.setImageURI(note.getImageUri());
+     
+     Створимо контекстне меню для редагування та видалення нотаток. Довгий натиск на елемент викликає меню:
+     
+1         androidx.appcompat.widget.PopupMenu popupMenu = new androidx.appcompat.widget.PopupMenu(context, view);
+2         popupMenu.inflate(R.menu.context_menu); 
+     
+     Дії для редагування та видалення викликаються через інтерфейс:
+     
+1         void onEditNoteClick(Note note, int position);
+2         void onDeleteNoteClick(Note note, int position);
+
+     Дані зберігаються до перезапуску застосунку за допомою NoteManager:
+
+1     private static final List<Note> notesList = new ArrayList<>(); 
+     
+     Також додаємо локалізацію до нашого застосунку:
+1 <resources>
+2     <string name="app_name">Нотатки</string>
+3     <string name="title">Заголовок</string>
+4     <string name="description">Опис</string>
+5     <string name="importance">Важливість</string>
+6     <string name="select_image">Вибрати зображення</string>
+7     <string name="save_note">Зберегти запис</string>
+8     <string name="update_note">Оновити запис</string>
+9     <string name="add_title">Додати запис</string>
+10    <string name="update_title">Оновити запис</string>
+11    <string name="delete_note">Видалити запис</string>
+12    <string name="add_note">Додати запис</string>
+13    <string name="note_image">Зображення запису</string>
+14    <string name="date_time">Дата та час</string>
+15    <string-array name="importance_levels">
+16        <item>Низький</item>
+17        <item>Середній</item>
+18        <item>Високий</item>
+19    </string-array>
+20 </resources>
+	
+
+
+
+
+ВИСНОВКИ
+     У процесі виконання лабораторної роботи було створено застосунок для управління нотатками, що включає функції додавання, редагування, видалення, пошуку та фільтрації. Додатково було реалізовано підтримку локалізації.
+     Посилання на відео-звіт завантажений на YouTube: https://youtu.be/-EW5JlXw6lY
+
+
+ВИКОРИСТАНІ ДЖЕРЕЛА
+
+1. Localize your app | Android Developers. URL: https://developer.android.com/guide/topics/resources/localization (дата звернення: 27.12.2024)
+
+ДОДАТОК А
+Код програми
+Увесь код програми можно знайти за посиланням у GitHub: https://github.com/NureDubinaStanislav/android-pzpi-23-6-dubina-stanislav
+2
+
+
